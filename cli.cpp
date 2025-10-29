@@ -45,5 +45,7 @@ int main(void)
         std::cout << "Failed to read data from FIFO." << std::endl;
     }
 
+    if (remove(listener))
+        std::cerr << ">:(" <<std::endl;
     return 0;
 }
