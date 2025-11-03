@@ -19,27 +19,6 @@
 #include <sys/stat.h>
 #include <sys/un.h>
 
-int get_fifo(std::string filename, int mode)
-{
-    std::filesystem::path fname = filename;
-    std::filesystem::path path = PATH_ROOT / fname;
-    int fd;
-
-    if (std::filesystem::exists(path) &&!std::filesystem::is_fifo(path)) {
-        std::cout << "ERROR: File " << path << " exists and is NOT a FIFO pipe" << std::endl;
-        exit(1);
-    }
-    if (mode == CREATE) {
-        if (mkfifo(path.c_str(), 0660)) {
-            std::perror("mkfifo");
-            exit(1);
-        }
-        return open(path.c_str(), O_WRONLY | O_CREAT | O_TRUNC);
-    } else {
-        return open(path.c_str(), O_RDONLY);
-    }
-}
-
 int main()
 {
     std::string pid;
@@ -47,11 +26,14 @@ int main()
     std::string line, msg;
     char c;
     int char_count;
-    std::fstream srv, cli;
+    std::fstream cli;
+    int srv_fd;
 
-    root = PATH_ROOT;
-    srv = get_fifo("srv");
-    int srv_fd = open(PATH_ROOT "/srv", O_RDONLY | O_NONBLOCK);
+    srv_fd = sfifo_open("srv");
+    if (srv_fd == -1) {
+        perror("open");
+        exit(1);
+    }
     FILE* fp = fdopen(srv_fd, "r");
 
     while (true){
@@ -61,11 +43,13 @@ int main()
         do {
             pid.append(1, c);
         } while ((c = getc(fp)) != '\0');
+        cli = sfifo_fstream(pid);
 
         char_count = 0;
         while (getc(fp) != '\0')
                  char_count++;
-        std::cout << pid << "\t" << char_count << std::endl;
+        std::cout << char_count << std::endl;
+        cli << char_count << std::endl;
         }
 }
         // while ((c = srv.get()) != '\0')

@@ -20,34 +20,43 @@
 int main(void)
 {
     std::filesystem::path pid;
-    std::filesystem::path path, root, tmp_filename;
+    std::filesystem::path path, root, fullpath;
+    std::string tmp;
     std::string line, msg;
+    int cli_fd, srv_fd;
     std::string n_of_chars;
 
-    root = PATH_ROOT;
-    std::fstream srv = get_fifo(root, "srv", false);
-    pid = std::to_string(getpid());
-    std::fstream response = get_fifo(PATH_ROOT, pid, true);
 
+    pid = std::to_string(getpid());
+    cli_fd = sfifo_open(pid);
+    if (cli_fd == -1) {
+        perror("open");
+        exit(1);
+    }
+    FILE* fp_cli = fdopen(cli_fd, "r");
+    std::fstream srv = sfifo_fstream("srv");
 
     std::cout << ">> Enter your message, one or more lines separated by ENTER. " \
         << "Press CTRL+D when done" << std::endl;
     while (getline(std::cin, line))
         msg.append(line).append("\n");
-    srv <<  pid.string() << std::endl << msg << std::endl;
+    srv <<  pid.string() << '\0' << std::endl << msg << '\0';
     std::cout << ">> Sent!" << std::endl;
 
-   while (response.peek() == std::ifstream::traits_type::eof())
+    const int bufferSize = 256;
+    char buffer[bufferSize];
+
+    struct stat fstat;
+    fullpath = PATH_ROOT / pid;
+    while (1) {
+        stat(fullpath.c_str(), &fstat);
+        if (fstat.st_size != 0)
+            break;
+
         usleep(1000);
+    };
+    fgets(buffer, bufferSize, fp_cli);
+    std::cout << buffer << std::endl;
 
-    // Read data from FIFO
-    if (std::getline(response, n_of_chars)) {
-        std::cout << ">> Data received: " << n_of_chars << std::endl;
-    } else {
-        std::cout << ">> Failed to read data from FIFO." << std::endl;
-    }
-
-    if (std::remove((root / pid).c_str()))
-        std::cout << ":V" << std::endl;
     return 0;
 }

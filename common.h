@@ -1,7 +1,7 @@
 #include <filesystem>
+#include <string>
 
 #define PATH_ROOT "/tmp/sfifo"
 
-std::fstream get_fifo(std::filesystem::path target_dir,
-                       std::filesystem::path filename, bool create);
-
+std::fstream sfifo_fstream(std::filesystem::path);
+int sfifo_open(std::string);
