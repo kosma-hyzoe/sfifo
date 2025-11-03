@@ -28,13 +28,8 @@ int main(void)
 
 
     pid = std::to_string(getpid());
-    cli_fd = sfifo_open(pid);
-    if (cli_fd == -1) {
-        perror("open");
-        exit(1);
-    }
-    FILE* fp_cli = fdopen(cli_fd, "r");
     std::fstream srv = sfifo_fstream("srv");
+    std::fstream cli = sfifo_fstream(pid);
 
     std::cout << ">> Enter your message, one or more lines separated by ENTER. " \
         << "Press CTRL+D when done" << std::endl;
@@ -46,17 +41,10 @@ int main(void)
     const int bufferSize = 256;
     char buffer[bufferSize];
 
-    struct stat fstat;
-    fullpath = PATH_ROOT / pid;
-    while (1) {
-        stat(fullpath.c_str(), &fstat);
-        if (fstat.st_size != 0)
-            break;
-
+    while (cli.peek() == EOF) {
         usleep(1000);
     };
-    fgets(buffer, bufferSize, fp_cli);
-    std::cout << buffer << std::endl;
-
+    std::getline(cli, line);
+    std::cout << line << std::endl;
     return 0;
 }

@@ -19,6 +19,14 @@
 #include <sys/stat.h>
 #include <sys/un.h>
 
+int sfifo_mkfifo(std::filesystem::path path) {
+        if (mkfifo(path.c_str(), 0660)) {
+        std::perror("mkfifo");
+       exit(1);
+    }
+    return 0;
+}
+
 int sfifo_open(std::string filename)
 {
     std::filesystem::path fname = filename;
@@ -47,14 +55,13 @@ int sfifo_open(std::string filename)
 
 std::fstream sfifo_fstream(std::filesystem::path filename) {
 
-    int ret = 0;
     std::filesystem::path path = PATH_ROOT / filename;
     if (std::filesystem::exists(path) && !std::filesystem::is_fifo(path)) {
             std::cout << "ERROR: File " << path \
             << " exists and is NOT a FIFO pipe" << std::endl;
             exit(1);
     }
-    std::fstream fifo(path.c_str());
+    std::fstream fifo(path.c_str(), std::ios::in | std::ios::out);
     if (!fifo.is_open()) {
         std::cout << "Failed to open Fcreate_and_read_IFO at " << path <<std::endl;
         exit(1);

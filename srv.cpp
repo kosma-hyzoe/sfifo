@@ -38,7 +38,7 @@ int main()
 
     while (true){
         while ((c = getc(fp)) == -1) {
-                usleep(1000);
+                usleep(10000);
         }
         do {
             pid.append(1, c);
