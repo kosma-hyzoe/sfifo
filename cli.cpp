@@ -20,32 +20,34 @@
 int main(void)
 {
     std::filesystem::path pid;
-    std::filesystem::path path;
+    std::filesystem::path path, root, tmp_filename;
     std::string line, msg;
     std::string n_of_chars;
 
-    std::fstream listener = get_fifo(PATH_ROOT, "listener");
+    root = PATH_ROOT;
+    std::fstream srv = get_fifo(root, "srv", false);
     pid = std::to_string(getpid());
-    std::fstream response = get_fifo(PATH_ROOT, pid);
+    std::fstream response = get_fifo(PATH_ROOT, pid, true);
 
 
-    std::cout << "Enter your message, one or more lines separated by ENTER. " \
+    std::cout << ">> Enter your message, one or more lines separated by ENTER. " \
         << "Press CTRL+D when done" << std::endl;
     while (getline(std::cin, line))
         msg.append(line).append("\n");
-    listener << pid.string() << std::endl << msg << std::endl;
+    srv <<  pid.string() << std::endl << msg << std::endl;
+    std::cout << ">> Sent!" << std::endl;
 
    while (response.peek() == std::ifstream::traits_type::eof())
         usleep(1000);
 
     // Read data from FIFO
     if (std::getline(response, n_of_chars)) {
-        std::cout << "Data received: " << n_of_chars << std::endl;
+        std::cout << ">> Data received: " << n_of_chars << std::endl;
     } else {
-        std::cout << "Failed to read data from FIFO." << std::endl;
+        std::cout << ">> Failed to read data from FIFO." << std::endl;
     }
 
-    if (remove(listener))
-        std::cerr << ">:(" <<std::endl;
+    if (std::remove((root / pid).c_str()))
+        std::cout << ":V" << std::endl;
     return 0;
 }
