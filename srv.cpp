@@ -17,9 +17,10 @@ int main()
 {
     char c, tmp;
     int char_count;
+    int srv_fd;
     std::string pid;
     std::filesystem::path path, root, tmp_filename;
-    std::fstream cli, srv;
+    std::fstream cli;
     struct sigaction sa{};
 
     sa.sa_handler = irq_handler;
@@ -30,19 +31,25 @@ int main()
     std::filesystem::create_directory(PATH_ROOT);
 
     sfifo_mkfifo(PATH_ROOT, "srv");
-    srv = sfifo_fstream(PATH_ROOT, "srv");
+    srv_fd = sfifo_open(PATH_ROOT, "srv");
+    if (srv_fd == -1) {
+        perror("open");
+        exit(1);
+    }
+    FILE* fp = fdopen(srv_fd, "r");
 
-    c = -1;
     while (1) {
         // TODO: replace with poll
-        srv.get(c);
-        std::cout << c;
+        while((c = getc(fp)) == -1){
+            std::cout << int(c) << std::endl << "0" << std::endl;
+            usleep(10000);
+        }
         do {
             pid.append(1, c);
-        } while (srv.get(c) && c != '\0');
+        } while ((c = getc(fp)) != '\0');
 
         char_count = 0;
-        while (srv.get(c) && c != '\0')
+        while ((c = getc(fp)) != '\0')
                 char_count++;
 
         sfifo_mkfifo(PATH_ROOT, pid);
@@ -50,5 +57,5 @@ int main()
         cli << (char_count - 1) << std::endl;
         cli.close();
     }
-    srv.close();
+    close(srv_fd);
 }
