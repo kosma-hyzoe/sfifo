@@ -46,5 +46,6 @@ int main(void)
     // TODO: close?
     cli = sfifo_fstream(PATH_ROOT, pid);
     std::cout << "Number of chars: " << cli.rdbuf();
+    cli.close();
     return 0;
 }

@@ -42,16 +42,14 @@ int main()
         do {
             pid.append(1, c);
         } while ((c = getc(fp)) != '\0');
-        std::cout << pid << std::endl;
 
         char_count = 0;
         while ((c = getc(fp)) != '\0')
                 char_count++;
-        std::cout << char_count;
         sfifo_mkfifo(PATH_ROOT, pid);
         cli = sfifo_fstream(PATH_ROOT, pid);
         cli << (char_count - 1) << std::endl;
-        cli.close();
+        dbg("1");
     }
     close(srv_fd);
 }
