@@ -19,56 +19,46 @@
 #include <sys/stat.h>
 #include <sys/un.h>
 
-int sfifo_mkfifo(std::filesystem::path path) {
-        if (mkfifo(path.c_str(), 0660)) {
-        std::perror("mkfifo");
-       exit(1);
-    }
-    return 0;
-}
-
-int sfifo_open(std::string filename)
-{
-    std::filesystem::path fname = filename;
-    std::filesystem::path path = PATH_ROOT / fname;
+int sfifo_mkfifo(std::string path_root, std::string filename) {
+    std::filesystem::path path = path_root / std::filesystem::path(filename);
     std::error_code err;
-    int fd;
+    int ret;
 
     if (std::filesystem::exists(path)) {
         if (!std::filesystem::is_fifo(path)) {
             std::cout << "ERROR: File " << path << " exists and is NOT a FIFO pipe" << std::endl;
             exit(1);
         } else {
+            // TODO: check with sudo
             if (!std::filesystem::remove(path, err)) {
-                std::cerr << err << std::endl << path \
+                std::cout << err << std::endl << path \
                     << " exists, failure when attempting to remove and recreate" << std::endl;
                 exit(1);
             }
         }
     }
-    if (mkfifo(path.c_str(), 0660)) {
+    if ((ret = mkfifo(path.c_str(), 0660))) {
         std::perror("mkfifo");
-       exit(1);
+        exit(ret);
     }
-    return open(path.c_str(), O_RDWR | O_CREAT | O_TRUNC | O_NONBLOCK);
+    return 0;
 }
 
-std::fstream sfifo_fstream(std::filesystem::path filename) {
+int sfifo_open(std::string path_root, std::string filename)
+{
+    std::filesystem::path path = path_root / std::filesystem::path(filename);
+    int fd;
 
-    std::filesystem::path path = PATH_ROOT / filename;
-    if (std::filesystem::exists(path) && !std::filesystem::is_fifo(path)) {
-            std::cout << "ERROR: File " << path \
-            << " exists and is NOT a FIFO pipe" << std::endl;
-            exit(1);
-    } else if (!std::filesystem::exists(path)) {
-        if (mkfifo(path.c_str(), 0660)) {
-        std::perror("mkfifo");
-       exit(1);
-        }
-    }
+    // TODO: err handling where used
+    return open(path.c_str(), O_RDWR | O_TRUNC | O_NONBLOCK);
+}
+
+std::fstream sfifo_fstream(std::string path_root, std::string filename) {
+    std::filesystem::path path = path_root / std::filesystem::path(filename);
+
     std::fstream fifo(path.c_str());
     if (!fifo.is_open()) {
-        std::cout << "Failed to open Fcreate_and_read_IFO at " << path <<std::endl;
+        std::cout << "Failed to open fifo fstream at " << path <<std::endl;
         exit(1);
     }
     return fifo;

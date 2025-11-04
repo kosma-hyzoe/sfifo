@@ -1,80 +1,54 @@
 #include "common.h"
 
 #include <string>
-#include <cerrno>
-#include <cstdlib>
-#include <cstdio>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <unistd.h>
-#include <cstdio>
-#include <cstring>
-#include <filesystem>
 #include <fstream>
-#include <fcntl.h>
-#include <unistd.h>
 #include <iostream>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/un.h>
+#include <csignal>
+#include <atomic>
+
+std::atomic<bool> interrupted(false);
+void irq_handler(int)
+{
+    interrupted = true;
+}
 
 int main()
 {
+    char c, tmp;
+    int char_count;
     std::string pid;
     std::filesystem::path path, root, tmp_filename;
-    std::string line, msg;
-    char c;
-    int char_count;
-    std::fstream cli;
-    int srv_fd;
+    std::fstream cli, srv;
+    struct sigaction sa{};
 
-    srv_fd = sfifo_open("srv");
-    if (srv_fd == -1) {
-        perror("open");
-        exit(1);
-    }
-    FILE* fp = fdopen(srv_fd, "r");
+    sa.sa_handler = irq_handler;
+    // sigaction(SIGINT, &sa, nullptr);
+    // sigaction(SIGTERM, &sa, nullptr);
 
-    while (true){
-    std::fstream cli = sfifo_fstream(pid);
-        while ((c = getc(fp)) == -1) {
-                usleep(1000);
-        }
+    // TODO: err handling
+    std::filesystem::create_directory(PATH_ROOT);
+
+    sfifo_mkfifo(PATH_ROOT, "srv");
+    srv = sfifo_fstream(PATH_ROOT, "srv");
+
+    c = -1;
+    while (1) {
+        // TODO: replace with poll
+        srv.get(c);
+        std::cout << c;
         do {
             pid.append(1, c);
-        } while ((c = getc(fp)) != '\0');
-        cli = sfifo_fstream(pid);
+        } while (srv.get(c) && c != '\0');
 
         char_count = 0;
-        while (getc(fp) != '\0')
-                 char_count++;
-        std::cout << char_count << std::endl;
-        // cli << char_count << std::endl;
-        }
+        while (srv.get(c) && c != '\0')
+                char_count++;
+
+        sfifo_mkfifo(PATH_ROOT, pid);
+        cli = sfifo_fstream(PATH_ROOT, pid);
+        cli << (char_count - 1) << std::endl;
+        cli.close();
+    }
+    srv.close();
 }
-        // while ((c = srv.get()) != '\0')
-        // while ((c = srv.get()) != '\0')
-        //     char_count++;
-        // cli = get_fifo(root, pid, false);
-        // cli << char_count;
-    // }
-
-    // while (std::getline(srv, line)) {
-    //     size_t pos = line.find('\0');
-    //     if (pos == std::string::npos) {
-    //             usleep(1000);
-    //             continue;
-    //     }
-    //
-    //
-    //     char_count = 0;
-    //     while (srv.get() != '\0')
-    //         char_count++;
-    //     cli = get_fifo(root, pid, false);
-    //     cli << char_count;
-    // }
-
-//     return 0;
-// }
-

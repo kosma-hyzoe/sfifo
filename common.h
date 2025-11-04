@@ -3,5 +3,6 @@
 
 #define PATH_ROOT "/tmp/sfifo"
 
-std::fstream sfifo_fstream(std::filesystem::path);
-int sfifo_open(std::string);
+int sfifo_mkfifo(std::string, std::string);
+std::fstream sfifo_fstream(std::string, std::string);
+int sfifo_open(std::string, std::string);
