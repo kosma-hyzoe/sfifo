@@ -37,8 +37,9 @@ int main()
     FILE* fp = fdopen(srv_fd, "r");
 
     while (true){
+    std::fstream cli = sfifo_fstream(pid);
         while ((c = getc(fp)) == -1) {
-                usleep(10000);
+                usleep(1000);
         }
         do {
             pid.append(1, c);
@@ -49,7 +50,7 @@ int main()
         while (getc(fp) != '\0')
                  char_count++;
         std::cout << char_count << std::endl;
-        cli << char_count << std::endl;
+        // cli << char_count << std::endl;
         }
 }
         // while ((c = srv.get()) != '\0')

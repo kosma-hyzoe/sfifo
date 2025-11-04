@@ -60,8 +60,13 @@ std::fstream sfifo_fstream(std::filesystem::path filename) {
             std::cout << "ERROR: File " << path \
             << " exists and is NOT a FIFO pipe" << std::endl;
             exit(1);
+    } else if (!std::filesystem::exists(path)) {
+        if (mkfifo(path.c_str(), 0660)) {
+        std::perror("mkfifo");
+       exit(1);
+        }
     }
-    std::fstream fifo(path.c_str(), std::ios::in | std::ios::out);
+    std::fstream fifo(path.c_str());
     if (!fifo.is_open()) {
         std::cout << "Failed to open Fcreate_and_read_IFO at " << path <<std::endl;
         exit(1);
