@@ -7,12 +7,17 @@
 #include <sys/stat.h>
 #include <sys/un.h>
 
+void dbg()
+{
+    std::cout << "foobar" << std::endl;
+}
 
 int main(void)
 {
     std::filesystem::path pid;
     std::string line, msg, payload;
     std::fstream srv, cli;
+    int sz;
     int srv_fd;
     std::string n_of_chars;
 
@@ -23,8 +28,16 @@ int main(void)
     while (getline(std::cin, line))
         msg.append(line).append("\n");
     payload = pid.string() + '\0' + msg + '\0';
-    srv = sfifo_fstream(PATH_ROOT, "srv");
-    srv << payload;
+
+    srv_fd = sfifo_open(PATH_ROOT, "srv");
+    if (srv_fd == -1) {
+        perror("open");
+        exit(1);
+    }
+    if ((sz = write(srv_fd, payload.data(), payload.size()) < -1)) {
+        perror("write");
+        exit(1);
+    }
     std::cout << ">> Sent!" << std::endl;
 
     // TODO: replace with poll
