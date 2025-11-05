@@ -40,10 +40,7 @@ int main(void)
     }
     std::cout << ">> Sent!" << std::endl;
 
-    // TODO: replace with poll
-    while (!std::filesystem::exists(PATH_ROOT / pid))
-        usleep(1000);
-
+    sfifo_mkfifo(PATH_ROOT, pid);
     cli = sfifo_fstream(PATH_ROOT, pid);
     cli >> cc;
     std::cout << "Char count: " << cc << std::endl;
