@@ -50,7 +50,6 @@ int main()
         cli = sfifo_fstream(PATH_ROOT, pid);
         cli << (char_count - 1) << std::endl;
 
-        cli.close();
         pid.clear();
     }
     close(srv_fd);
