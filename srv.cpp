@@ -49,7 +49,9 @@ int main()
         sfifo_mkfifo(PATH_ROOT, pid);
         cli = sfifo_fstream(PATH_ROOT, pid);
         cli << (char_count - 1) << std::endl;
-        dbg("1");
+
+        cli.close();
+        pid.clear();
     }
     close(srv_fd);
 }
