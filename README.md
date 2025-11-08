@@ -19,7 +19,7 @@
 ### Constraints
 
 If client or server attempts to create a FIFO file and a file at given path
-already exists and is not a FIFO file, write an error message to `stdout`.
+already exists and is not a FIFO file, write an error message to `stdout` (sic!).
 
 ## Usage
 

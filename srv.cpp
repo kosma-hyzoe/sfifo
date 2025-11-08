@@ -15,14 +15,19 @@ const int PID_MAX_LEN = std::to_string(get_pid_max()).length();
 
 void cleanup(int sig)
 {
+    int exit_code = 0;
     interrupted = sig;
     std::cout << "\nCaught SIGINT, performing cleanup and exiting...\n";
+
     if (srv_fd != -1)
         close(srv_fd);
-
-    if (!std::filesystem::remove(SRV_PATH) || !std::filesystem::remove(PATH_ROOT))
+    if ((exit_code = unlink(SRV_PATH.c_str())))
+        perror("unlink");
+    if (!std::filesystem::remove(PATH_ROOT)) {
         perror("remove");
-    exit(0);
+        exit(1);
+    }
+    exit(exit_code);
 }
 
 int main()

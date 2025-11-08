@@ -24,7 +24,7 @@ $(TARGET_SRV): $(OBJS_SRV)
 
 clean:
 	rm -f $(OBJS_CLI) $(OBJS_SRV) $(TARGET_CLI) $(TARGET_SRV)
-	rmdir bin
+	rm -rf bin
 	rm -rf /tmp/sfifo
 
 prepare:
