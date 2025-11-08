@@ -11,7 +11,7 @@ OBJS_SRV = $(SRCS_SRV:.cpp=.o)
 TARGET_CLI = bin/sfifo-cli
 TARGET_SRV = bin/sfifo-srv
 
-all: prepare $(TARGET_CLI) $(TARGET_SRV)
+all: $(TARGET_CLI) $(TARGET_SRV)
 
 $(TARGET_CLI): $(OBJS_CLI)
 	$(CXX) $(CXXFLAGS) -o $@ $^
@@ -25,6 +25,7 @@ $(TARGET_SRV): $(OBJS_SRV)
 clean:
 	rm -f $(OBJS_CLI) $(OBJS_SRV) $(TARGET_CLI) $(TARGET_SRV)
 	rmdir bin
+	rm -rf /tmp/sfifo
 
 prepare:
 	mkdir -p bin

@@ -9,22 +9,20 @@
 #include <csignal>
 
 volatile sig_atomic_t interrupted = 0;
-static int srv_fd = -1;
 
+static int srv_fd = -1;
 const int PID_MAX_LEN = std::to_string(get_pid_max()).length();
 
 void cleanup(int sig)
 {
-    interrupted = 1;
-    std::string sig_name = (sig == SIGINT) ? "SIGINT" : "SIGTERM";
-    int exit_code = (sig == SIGINT) ? 0 : 1;
-    std::cout << "\nCaught " << sig_name << ", performing cleanup and exiting...\n";
+    interrupted = sig;
+    std::cout << "\nCaught SIGINT, performing cleanup and exiting...\n";
     if (srv_fd != -1)
         close(srv_fd);
 
-    if (!std::filesystem::remove(SRV_PATH))
+    if (!std::filesystem::remove(SRV_PATH) || !std::filesystem::remove(PATH_ROOT))
         perror("remove");
-    exit(exit_code);
+    exit(0);
 }
 
 int main()
@@ -34,7 +32,6 @@ int main()
     if (ec && !std::filesystem::exists(PATH_ROOT))
         PERROR_EXIT("create_directory");
     std::signal(SIGINT, cleanup);
-    std::signal(SIGTERM, cleanup);
 
     sfifo_mkfifo(SRV_PATH);
     srv_fd = sfifo_open(SRV_PATH, O_RDWR);
@@ -64,12 +61,13 @@ int main()
                 erratic_write_detected = true;
         }
         if (erratic_write_detected) {
-            std::cout << "Ingoring erratic write - PID to long...\n";
+            std::cout << "Ingoring erratic write - PID too long...\n";
             while (getc(fp) != EOF)
                 ;
             continue;
         }
-        std::cout << "Handling client at " << PATH_ROOT << "/" << pid << "...\n";
+        std::string cli_filename = get_cli_filename(pid);
+        std::cout << "Handling client at " << PATH_ROOT << "/" << cli_filename << "...\n";
 
         cc = 0;
         while ((c = getc(fp)) != '\0' && !erratic_write_detected) {
@@ -77,15 +75,15 @@ int main()
                 erratic_write_detected = true;
         }
         if (erratic_write_detected) {
-            std::cout << "Ingoring erratic write - message to long...\n";
+            std::cout << "Ingoring erratic write - message too long...\n";
             while (getc(fp) != EOF)
                 ;
             continue;
         }
 
-        std::fstream cli = sfifo_fstream(pid);
+        std::fstream cli = sfifo_fstream(get_cli_filename(pid));
         cli << cc << std::endl;
         cli.close();
-        std::cout << "Handled client at " << PATH_ROOT << "/" << pid << std::endl;
+        std::cout << "Handled client at " << PATH_ROOT << "/" << cli_filename << std::endl;
     }
 }

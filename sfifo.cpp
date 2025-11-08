@@ -53,3 +53,13 @@ int get_pid_max()
     pid_max_fstream >> v;
     return v;
 }
+
+std::string get_cli_filename(int pid)
+{
+    return CLIENT_PREFIX + std::to_string(pid);
+}
+
+std::string get_cli_filename(std::string pid)
+{
+    return CLIENT_PREFIX + pid;
+}

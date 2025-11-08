@@ -15,11 +15,15 @@
 
 const std::string PATH_ROOT = "/tmp/sfifo";
 const std::string SRV_PATH = PATH_ROOT + "/srv";
+const std::string CLIENT_PREFIX = "fifo";
 
 const long ARG_MAX = {sysconf(_SC_ARG_MAX)};
 
 int sfifo_mkfifo(std::string);
-std::fstream sfifo_fstream(std::string);
 int sfifo_open(std::string, int);
+std::fstream sfifo_fstream(std::string);
+
 int get_pid_max();
+std::string get_cli_filename(int);
+std::string get_cli_filename(std::string);
 

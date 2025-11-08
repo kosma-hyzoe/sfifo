@@ -20,22 +20,25 @@ int main(void)
             break;
         std::cout << "Message exceeding " << ARG_MAX << " chars, try again." << std::endl;
     }
-    std::filesystem::path pid = std::to_string(getpid());
-    std::string payload = pid.string() + '\0' + line + '\0';
+    int pid = getpid();
+    std::string cli_filename = get_cli_filename(pid);
+    std::string payload = std::to_string(pid) + '\0' + line + '\0';
 
     int srv_fd = sfifo_open(SRV_PATH, O_WRONLY);
     if (srv_fd == -1)
         PERROR_EXIT("open");
-    sfifo_mkfifo(pid);
+    sfifo_mkfifo(cli_filename);
     int sz;
     if ((sz = write(srv_fd, payload.data(), payload.size())) < 0)
         PERROR_EXIT("write");
 
-    std::fstream cli = sfifo_fstream(pid);
+    std::fstream cli = sfifo_fstream(cli_filename);
     std::string char_count;
     cli >> char_count;
     std::cout << "Char count: " << char_count << std::endl;
     cli.close();
     close(srv_fd);
+    if (!std::filesystem::remove(PATH_ROOT + "/" + cli_filename))
+        PERROR_EXIT("remove");
     return 0;
 }
