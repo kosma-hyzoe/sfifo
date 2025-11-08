@@ -1,3 +1,4 @@
 cli
 srv
 bin
+*.o

@@ -1,25 +1,18 @@
-# Compiler
-CXX = g++
+CXX = g++-13
 
-# Compiler flags
 CXXFLAGS = -Wall -Wextra -std=c++20
 
-# Source files
-SRCS_CLI = cli.cpp common.cpp
-SRCS_SRV = srv.cpp common.cpp
+SRCS_CLI = cli.cpp sfifo.cpp
+SRCS_SRV = srv.cpp sfifo.cpp
 
-# Object files
 OBJS_CLI = $(SRCS_CLI:.cpp=.o)
 OBJS_SRV = $(SRCS_SRV:.cpp=.o)
 
-# Executable names
-TARGET_CLI = bin/cli
-TARGET_SRV = bin/srv
+TARGET_CLI = bin/sfifo-cli
+TARGET_SRV = bin/sfifo-srv
 
-# Default target
 all: $(TARGET_CLI) $(TARGET_SRV)
 
-# Build cli executable
 $(TARGET_CLI): $(OBJS_CLI)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
@@ -40,5 +33,5 @@ prepare:
 	mkdir -p bin
 
 # Phony targets
-.PHONY: all clean prepare
+.PHONY: clean preapre all
 

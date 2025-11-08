@@ -1,80 +1,91 @@
-#include "common.h"
+#include "sfifo.h"
+
+#include <poll.h>
+#include <fcntl.h>
 
 #include <string>
-#include <cerrno>
-#include <cstdlib>
-#include <cstdio>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <cstdio>
-#include <cstring>
-#include <filesystem>
 #include <fstream>
-#include <fcntl.h>
-#include <unistd.h>
 #include <iostream>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/un.h>
+#include <csignal>
+
+volatile sig_atomic_t interrupted = 0;
+static int srv_fd = -1;
+
+const int PID_MAX_LEN = std::to_string(get_pid_max()).length();
+
+void cleanup(int sig)
+{
+    interrupted = 1;
+    std::string sig_name = (sig == SIGINT) ? "SIGINT" : "SIGTERM";
+    int exit_code = (sig == SIGINT) ? 0 : 1;
+    std::cout << "\nCaught " << sig_name << ", performing cleanup and exiting...\n";
+    if (srv_fd != -1)
+        close(srv_fd);
+
+    if (!std::filesystem::remove(SRV_PATH))
+        perror("remove");
+    exit(exit_code);
+}
 
 int main()
 {
-    std::string pid;
-    std::filesystem::path path, root, tmp_filename;
-    std::string line, msg;
-    char c;
-    int char_count;
-    std::fstream cli;
-    int srv_fd;
+    std::error_code ec;
+    std::filesystem::create_directory(PATH_ROOT, ec);
+    if (ec && !std::filesystem::exists(PATH_ROOT))
+        PERROR_EXIT("create_directory");
+    std::signal(SIGINT, cleanup);
+    std::signal(SIGTERM, cleanup);
 
-    srv_fd = sfifo_open("srv");
-    if (srv_fd == -1) {
-        perror("open");
-        exit(1);
-    }
+    sfifo_mkfifo(SRV_PATH);
+    srv_fd = sfifo_open(SRV_PATH, O_RDWR);
+    if (srv_fd == -1)
+        PERROR_EXIT("open");
     FILE* fp = fdopen(srv_fd, "r");
 
-    while (true){
-    std::fstream cli = sfifo_fstream(pid);
-        while ((c = getc(fp)) == -1) {
-                usleep(1000);
+    struct pollfd pfd;
+    pfd.fd = srv_fd;
+    pfd.events = POLLIN;
+
+    while (1) {
+        bool erratic_write_detected = false;
+
+        std::cout << "Listening...\n";
+        int ret = poll(&pfd, 1, -1);
+        if (ret == -1) {
+            perror("poll");
+            exit(1);
         }
-        do {
+
+        int c = 0, cc = 0;
+        std::string pid;
+        while ((c = getc(fp)) != '\0' && !erratic_write_detected) {
             pid.append(1, c);
-        } while ((c = getc(fp)) != '\0');
-        cli = sfifo_fstream(pid);
-
-        char_count = 0;
-        while (getc(fp) != '\0')
-                 char_count++;
-        std::cout << char_count << std::endl;
-        // cli << char_count << std::endl;
+            if (++cc > PID_MAX_LEN)
+                erratic_write_detected = true;
         }
+        if (erratic_write_detected) {
+            std::cout << "Ingoring erratic write - PID to long...\n";
+            while (getc(fp) != EOF)
+                ;
+            continue;
+        }
+        std::cout << "Handling client at " << PATH_ROOT << "/" << pid << "...\n";
+
+        cc = 0;
+        while ((c = getc(fp)) != '\0' && !erratic_write_detected) {
+            if (++cc > ARG_MAX)
+                erratic_write_detected = true;
+        }
+        if (erratic_write_detected) {
+            std::cout << "Ingoring erratic write - message to long...\n";
+            while (getc(fp) != EOF)
+                ;
+            continue;
+        }
+
+        std::fstream cli = sfifo_fstream(pid);
+        cli << cc << std::endl;
+        cli.close();
+        std::cout << "Handled client at " << PATH_ROOT << "/" << pid << std::endl;
+    }
 }
-        // while ((c = srv.get()) != '\0')
-        // while ((c = srv.get()) != '\0')
-        //     char_count++;
-        // cli = get_fifo(root, pid, false);
-        // cli << char_count;
-    // }
-
-    // while (std::getline(srv, line)) {
-    //     size_t pos = line.find('\0');
-    //     if (pos == std::string::npos) {
-    //             usleep(1000);
-    //             continue;
-    //     }
-    //
-    //
-    //     char_count = 0;
-    //     while (srv.get() != '\0')
-    //         char_count++;
-    //     cli = get_fifo(root, pid, false);
-    //     cli << char_count;
-    // }
-
-//     return 0;
-// }
-
