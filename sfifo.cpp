@@ -39,10 +39,10 @@ int sfifo_open(std::string path_root, std::string filename)
     return open(path.c_str(), O_RDWR | O_TRUNC | O_NONBLOCK);
 }
 
-std::fstream sfifo_fstream(std::string path_root, std::string filename, int mode) {
+std::fstream sfifo_fstream(std::string path_root, std::string filename) {
     std::filesystem::path path = path_root / std::filesystem::path(filename);
 
-    std::fstream fifo(path.c_str(), mode ? std::ios::in : std::ios::out);
+    std::fstream fifo(path.c_str());
     if (!fifo.is_open()) {
         std::cout << "Failed to open fifo fstream at " << path <<std::endl;
         exit(1);

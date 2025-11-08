@@ -2,7 +2,6 @@
 
 #include <unistd.h>
 
-#include <string>
 #include <fstream>
 #include <iostream>
 
@@ -14,27 +13,20 @@ int main(void)
         getline(std::cin, line);
         if (line.length() <= ARG_MAX)
             break;
-        std::cout << "Message exceeding " << ARG_MAX << ", try again." << std::endl;
+        std::cout << "Message exceeding " << ARG_MAX << " chars, try again." << std::endl;
     }
     std::filesystem::path pid = std::to_string(getpid());
-    std::cout << line << std::endl; // TODO: temp
     std::string payload = pid.string() + '\0' + line + '\0';
 
     int srv_fd = sfifo_open(PATH_ROOT, "srv");
-    if (srv_fd == -1) {
-        perror("open");
-        exit(1);
-    }
-    int sz;
+    if (srv_fd == -1)
+        PERROR_EXIT("open");
     sfifo_mkfifo(PATH_ROOT, pid);
-    if ((sz = write(srv_fd, payload.data(), payload.size()) < -1)) {
-        perror("write");
-        exit(1);
-    }
-    std::cout << ">> Sent!" << std::endl;
+    int sz;
+    if ((sz = write(srv_fd, payload.data(), payload.size()) < -1))
+        PERROR_EXIT("write");
 
-    std::fstream cli = sfifo_fstream(PATH_ROOT, pid, 0);
-    std::cout << "1" << std::endl;
+    std::fstream cli = sfifo_fstream(PATH_ROOT, pid);
     std::string char_count;
     cli >> char_count;
     std::cout << "Char count: " << char_count << std::endl;
