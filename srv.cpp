@@ -1,7 +1,7 @@
 #include "sfifo.h"
 
-#include <poll.h>
 #include <fcntl.h>
+#include <poll.h>
 
 #include <string>
 #include <fstream>

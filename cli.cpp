@@ -1,7 +1,7 @@
 #include "sfifo.h"
 
-#include <unistd.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #include <fstream>
 #include <iostream>
