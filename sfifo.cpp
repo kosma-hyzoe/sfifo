@@ -1,23 +1,11 @@
-#include "common.h"
+#include "sfifo.h"
+
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include <string>
-#include <cerrno>
-#include <cstdlib>
-#include <cstdio>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <cstdio>
-#include <cstring>
-#include <filesystem>
 #include <fstream>
-#include <fcntl.h>
-#include <unistd.h>
 #include <iostream>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/un.h>
 
 int sfifo_mkfifo(std::string path_root, std::string filename) {
     std::filesystem::path path = path_root / std::filesystem::path(filename);
@@ -47,16 +35,14 @@ int sfifo_mkfifo(std::string path_root, std::string filename) {
 int sfifo_open(std::string path_root, std::string filename)
 {
     std::filesystem::path path = path_root / std::filesystem::path(filename);
-    int fd;
-
     // TODO: err handling where used
     return open(path.c_str(), O_RDWR | O_TRUNC | O_NONBLOCK);
 }
 
-std::fstream sfifo_fstream(std::string path_root, std::string filename) {
+std::fstream sfifo_fstream(std::string path_root, std::string filename, int mode) {
     std::filesystem::path path = path_root / std::filesystem::path(filename);
 
-    std::fstream fifo(path.c_str());
+    std::fstream fifo(path.c_str(), mode ? std::ios::in : std::ios::out);
     if (!fifo.is_open()) {
         std::cout << "Failed to open fifo fstream at " << path <<std::endl;
         exit(1);

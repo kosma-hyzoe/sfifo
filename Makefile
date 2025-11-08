@@ -5,8 +5,8 @@ CXX = g++
 CXXFLAGS = -Wall -Wextra -std=c++20
 
 # Source files
-SRCS_CLI = cli.cpp common.cpp
-SRCS_SRV = srv.cpp common.cpp
+SRCS_CLI = cli.cpp sfifo.cpp
+SRCS_SRV = srv.cpp sfifo.cpp
 
 # Object files
 OBJS_CLI = $(SRCS_CLI:.cpp=.o)

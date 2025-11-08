@@ -1,49 +1,43 @@
-#include "common.h"
+#include "sfifo.h"
+
+#include <unistd.h>
 
 #include <string>
-#include <unistd.h>
 #include <fstream>
 #include <iostream>
-#include <sys/stat.h>
-#include <sys/un.h>
-
-void dbg()
-{
-    std::cout << "foobar" << std::endl;
-}
 
 int main(void)
 {
-    std::filesystem::path pid;
-    std::string line, msg, payload;
-    std::fstream srv, cli;
-    int sz;
-    int srv_fd;
-    std::string cc;
+    std::string line;
+    std::cout << ">> Enter your message in one line, press ENTER when done." << std::endl;
+    while (1) {
+        getline(std::cin, line);
+        if (line.length() <= ARG_MAX)
+            break;
+        std::cout << "Message exceeding " << ARG_MAX << ", try again." << std::endl;
+    }
+    std::filesystem::path pid = std::to_string(getpid());
+    std::cout << line << std::endl; // TODO: temp
+    std::string payload = pid.string() + '\0' + line + '\0';
 
-    pid = std::to_string(getpid());
-
-    std::cout << ">> Enter your message, one or more lines separated by ENTER. " \
-        << "Press CTRL+D when done" << std::endl;
-    while (getline(std::cin, line))
-        msg.append(line).append("\n");
-    payload = pid.string() + '\0' + msg + '\0';
-
-    srv_fd = sfifo_open(PATH_ROOT, "srv");
+    int srv_fd = sfifo_open(PATH_ROOT, "srv");
     if (srv_fd == -1) {
         perror("open");
         exit(1);
     }
+    int sz;
+    sfifo_mkfifo(PATH_ROOT, pid);
     if ((sz = write(srv_fd, payload.data(), payload.size()) < -1)) {
         perror("write");
         exit(1);
     }
     std::cout << ">> Sent!" << std::endl;
 
-    sfifo_mkfifo(PATH_ROOT, pid);
-    cli = sfifo_fstream(PATH_ROOT, pid);
-    cli >> cc;
-    std::cout << "Char count: " << cc << std::endl;
+    std::fstream cli = sfifo_fstream(PATH_ROOT, pid, 0);
+    std::cout << "1" << std::endl;
+    std::string char_count;
+    cli >> char_count;
+    std::cout << "Char count: " << char_count << std::endl;
     cli.close();
     close(srv_fd);
     return 0;
