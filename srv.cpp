@@ -1,6 +1,7 @@
 #include "sfifo.h"
 
 #include <poll.h>
+#include <fcntl.h>
 
 #include <string>
 #include <fstream>
@@ -10,9 +11,7 @@
 volatile sig_atomic_t interrupted = 0;
 static int srv_fd = -1;
 
-constexpr int PID_MAX {4194304};
-const int PID_MAX_SLEN = std::to_string(PID_MAX).length();
-const std::filesystem::path srv_fn = "srv";
+const int PID_MAX_LEN = std::to_string(get_pid_max()).length();
 
 void cleanup(int sig)
 {
@@ -23,7 +22,7 @@ void cleanup(int sig)
     if (srv_fd != -1)
         close(srv_fd);
 
-    if (!std::filesystem::remove(PATH_ROOT / srv_fn))
+    if (!std::filesystem::remove(SRV_PATH))
         perror("remove");
     exit(exit_code);
 }
@@ -37,8 +36,8 @@ int main()
     std::signal(SIGINT, cleanup);
     std::signal(SIGTERM, cleanup);
 
-    sfifo_mkfifo(PATH_ROOT, srv_fn);
-    srv_fd = sfifo_open(PATH_ROOT, srv_fn);
+    sfifo_mkfifo(SRV_PATH);
+    srv_fd = sfifo_open(SRV_PATH, O_RDWR);
     if (srv_fd == -1)
         PERROR_EXIT("open");
     FILE* fp = fdopen(srv_fd, "r");
@@ -61,7 +60,7 @@ int main()
         std::string pid;
         while ((c = getc(fp)) != '\0' && !erratic_write_detected) {
             pid.append(1, c);
-            if (++cc > PID_MAX_SLEN)
+            if (++cc > PID_MAX_LEN)
                 erratic_write_detected = true;
         }
         if (erratic_write_detected) {
@@ -84,7 +83,7 @@ int main()
             continue;
         }
 
-        std::fstream cli = sfifo_fstream(PATH_ROOT, pid);
+        std::fstream cli = sfifo_fstream(pid);
         cli << cc << std::endl;
         cli.close();
         std::cout << "Handled client at " << PATH_ROOT << "/" << pid << std::endl;

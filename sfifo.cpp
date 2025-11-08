@@ -7,8 +7,8 @@
 #include <fstream>
 #include <iostream>
 
-int sfifo_mkfifo(std::string path_root, std::string filename) {
-    std::filesystem::path path = path_root / std::filesystem::path(filename);
+int sfifo_mkfifo(std::string filename) {
+    std::filesystem::path path = PATH_ROOT / std::filesystem::path(filename);
     std::error_code err;
     int ret;
 
@@ -17,7 +17,6 @@ int sfifo_mkfifo(std::string path_root, std::string filename) {
             std::cout << "ERROR: File " << path << " exists and is NOT a FIFO pipe" << std::endl;
             exit(1);
         } else {
-            // TODO: check with sudo
             if (!std::filesystem::remove(path, err)) {
                 std::cout << err << std::endl << path \
                     << " exists, failure when attempting to remove and recreate" << std::endl;
@@ -25,22 +24,19 @@ int sfifo_mkfifo(std::string path_root, std::string filename) {
             }
         }
     }
-    if ((ret = mkfifo(path.c_str(), 0660))) {
-        std::perror("mkfifo");
-        exit(ret);
-    }
+    if ((ret = mkfifo(path.c_str(), 0660)))
+        PERROR_EXIT_RET("mkfifo", ret);
     return 0;
 }
 
-int sfifo_open(std::string path_root, std::string filename)
+int sfifo_open(std::string filename, int mode)
 {
-    std::filesystem::path path = path_root / std::filesystem::path(filename);
-    // TODO: err handling where used
-    return open(path.c_str(), O_RDWR | O_TRUNC | O_NONBLOCK);
+    std::filesystem::path path = PATH_ROOT / std::filesystem::path(filename);
+    return open(path.c_str(), O_TRUNC | mode | O_NONBLOCK);
 }
 
-std::fstream sfifo_fstream(std::string path_root, std::string filename) {
-    std::filesystem::path path = path_root / std::filesystem::path(filename);
+std::fstream sfifo_fstream(std::string filename) {
+    std::filesystem::path path = PATH_ROOT / std::filesystem::path(filename);
 
     std::fstream fifo(path.c_str());
     if (!fifo.is_open()) {
@@ -50,3 +46,10 @@ std::fstream sfifo_fstream(std::string path_root, std::string filename) {
     return fifo;
 }
 
+int get_pid_max()
+{
+    std::ifstream pid_max_fstream("/proc/sys/kernel/pid_max");
+    int v;
+    pid_max_fstream >> v;
+    return v;
+}
